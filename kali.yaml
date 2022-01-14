@@ -29,9 +29,9 @@ spec:
                       - key: vpn.ovpn
                         path: vpn.ovpn
 
-                - name: vpn-creds
+                - name: vpn-key-creds
                   secret:
-                    secretName: vpn-key-creds
+                    secretName: vpn-creds
                     items:
                       - key: creds
                         path: creds
