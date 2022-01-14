@@ -469,14 +469,12 @@ data:
 
     openvpn_args=(
         "--config" "$config_file_modified"
-        "--auth-nocache"
         "--cd" "/data/vpn"
         "--pull-filter" "ignore" "ifconfig-ipv6"
         "--pull-filter" "ignore" "route-ipv6"
         "--script-security" "2"
         "--up-restart"
         "--verb" "$vpn_log_level"
-        "--aspass" "/data/auth/creds"
     )
 
     if [[ -n "$VPN_AUTH_SECRET" ]]; then

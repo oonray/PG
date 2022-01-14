@@ -32,6 +32,7 @@ spec:
                 - name: vpn-key-creds
                   secret:
                     secretName: vpn-creds
+                    defaultMode: 0600
                     items:
                       - key: creds
                         path: creds
@@ -53,6 +54,7 @@ spec:
                 - name: entry
                   configMap:
                     name: entry
+                    defaultMode: 0755
                     items:
                       - key: entry.sh
                         path: entry.sh
@@ -105,26 +107,21 @@ spec:
                       value: vpn.ovpn
                     - name: SOCKS_PROXY
                       value: on
-                    - name: PROXY_USERNAME_SECRET
+                    - name: PROXY_USERNAME
                       valueFrom:
                         secretKeyRef:
                           name: vpn-pass
                           key: USERNAME
-                    - name: PROXY_PASSWORD_SECRET
+                    - name: PROXY_PASSWORD
                       valueFrom:
                         secretKeyRef:
                           name: vpn-pass
                           key: PASSWORD
+
                   volumeMounts:
                     - name: vpn-config
                       mountPath:  /data/vpn/vpn.ovpn
                       subPath: vpn.ovpn
-                    - name: vpn-key-creds
-                      mountPath:  /data/auth/creds
-                      subPath: creds
-                    - name: entry
-                      mountPath:  /data/scripts/entry.sh
-                      subPath: entry.sh
                   ports:
                     - containerPort: 1080
 
