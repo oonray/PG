@@ -4,5 +4,6 @@ namespace: pg
 resources:
   - configmaps.yaml
   - secrets.enc.yaml
+  - secrets2.enc.yaml
   - service.yaml
   - kali.yaml

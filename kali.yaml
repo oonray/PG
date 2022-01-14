@@ -29,6 +29,13 @@ spec:
                       - key: vpn.ovpn
                         path: vpn.ovpn
 
+                - name: vpn-creds
+                  secret:
+                    secretName: vpn-key-creds
+                    items:
+                      - key: creds
+                        path: creds
+
                 - name: install-script
                   configMap:
                     name: kali-insall-script
@@ -42,6 +49,13 @@ spec:
                     items:
                       - key: .tmux.conf
                         path: .tmux.conf
+
+                - name: entry
+                  configMap:
+                    name: entry
+                    items:
+                      - key: entry.sh
+                        path: entry.sh
 
                 - name: goproxy
                   configMap:
@@ -105,6 +119,12 @@ spec:
                     - name: vpn-config
                       mountPath:  /data/vpn/vpn.ovpn
                       subPath: vpn.ovpn
+                    - name: vpn-key-creds
+                      mountPath:  /data/auth/creds
+                      subPath: creds
+                    - name: entry
+                      mountPath:  /data/scripts/entry.sh
+                      subPath: entry.sh
                   ports:
                     - containerPort: 1080
 
