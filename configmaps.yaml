@@ -1,0 +1,270 @@
+kind: ConfigMap
+metadata:
+  name: kali-insall-script
+apiVersion: v1
+data:
+  install.sh: |-
+     #!/bin/sh
+     while true; do sleep 5; done
+
+---
+kind: ConfigMap
+metadata:
+  name: tmux
+apiVersion: v1
+data:
+   .tmux.conf: |-
+    set -g default-terminal "screen-256color"
+    set -g mouse on
+
+---
+kind: ConfigMap
+metadata:
+  name: sockd-conf
+apiVersion: v1
+data:
+  sockd.conf: |-
+    # Logging
+    logoutput: /var/log/sockd.log
+    errorlog: stderr
+
+    # Server address specification
+    internal: eth0 port = 1080
+    external: tun0
+
+    # Authentication methods
+    clientmethod: none
+    socksmethod: none
+
+    # Server identities
+    user.unprivileged: sockd
+
+    ##
+    ## SOCKS client access rules
+    ##
+    # Rule processing stops at the first match; no match results in blocking
+
+    # Block access to socks server from 192.0.2.22
+    # client block {
+    #       # Block connections from 192.0.2.22/32
+    #       from: 192.0.2.22/24 to: 0.0.0.0/0
+    #       log: error # connect disconnect
+    # }
+
+    # Allow all connections
+    client pass {
+        from: 0.0.0.0/0 to: 0.0.0.0/0
+        log: error connect disconnect
+    }
+
+    ##
+    ## SOCKS command rules
+    ##
+    # Rule processing stops at the first match; no match results in blocking
+
+    # Block communication with www.example.org
+    # socks block {
+    #        from: 0.0.0.0/0 to: www.example.org
+    #        command: bind connect udpassociate
+    #        log: error # connect disconnect iooperation
+    # }
+
+    # Generic pass statement - bind/outgoing traffic
+    socks pass {
+        from: 0.0.0.0/0 to: 0.0.0.0/0
+        command: bind connect udpassociate
+        log: error connect disconnect # iooperation
+    }
+
+    # Block incoming connections/packets from ftp.example.org
+    # socks block {
+    #        from: ftp.example.org to: 0.0.0.0/0
+    #        command: bindreply udpreply
+    #        log: error # connect disconnect iooperation
+    # }
+
+    # Generic pass statement for incoming connections/packets
+    socks pass {
+        from: 0.0.0.0/0 to: 0.0.0.0/0
+        command: bindreply udpreply
+        log: error connect disconnect # iooperation
+    }
+
+---
+kind: ConfigMap
+metadata:
+  name: goproxy
+apiVersion: v1
+data:
+  proxy.go: |-
+    package main
+
+    import (
+      "fmt"
+      "flag"
+      "net/http"
+      "net/http/httputil"
+      "net/url"
+      "errors"
+      "github.com/gorilla/mux"
+      log "github.com/sirupsen/logrus"
+    )
+
+    var (
+      proxies		= make(map[string]*httputil.ReverseProxy)
+      proxy *string
+      others []string
+    )
+
+    func proxy_init(){
+      remote, err := url.Parse(*proxy)
+      if (err!=nil){
+        log.Errorf("Unable To Parse Proxy Target: %s",err)
+      }
+
+      for _,v := range others {
+        proxies[v] = httputil.NewSingleHostReverseProxy(remote)
+      }
+    }
+
+    func argparse() error {
+      proxy = flag.String("p,proxy","","The proxy to forward to")
+      flag.Parse()
+      others = flag.Args()
+
+      if(*proxy == ""){
+        return errors.New("Target proxy needs to be decleared")
+      }
+
+      if(len(others) <= 0){
+        return errors.New(fmt.Sprintf("Needs more than %d hosts",len(others)))
+      }
+
+      return nil
+    }
+
+    func main() {
+      err := argparse()
+      if err != nil {
+        log.Fatal(err)
+      }
+
+      proxy_init()
+
+      r := mux.NewRouter()
+      for host, proxy := range proxies {
+        r.Host(host).Handler(proxy)
+      }
+
+      log.Fatal(http.ListenAndServe(":8081",r))
+    }
+
+---
+kind: ConfigMap
+metadata:
+  name: goforward
+apiVersion: v1
+data:
+  forward.go: |-
+    package main
+
+    import (
+      "fmt"
+      "flag"
+      "net"
+      "bufio"
+      "io"
+      log "github.com/sirupsen/logrus"
+    )
+
+    var (
+      in net.Listener
+      out net.Conn
+
+      lport *string
+
+      host *string
+      port *string
+
+      cons string
+      lcons string
+
+      done bool
+    )
+
+    func argparse(){
+      lport = flag.String("lp","","The port to listen on")
+      host = flag.String("H","","The host to conenct to")
+      port = flag.String("P","","The port to connect to")
+      flag.Parse()
+    }
+
+    func main() {
+      var err error
+      defer func(){done=true}()
+
+      argparse()
+
+      cons = fmt.Sprintf("%s:%s",*host,*port)
+      lcons = fmt.Sprintf(":%s",*lport)
+
+      log.Infof("Listening on %s",lcons)
+      in, err = net.Listen("tcp",lcons)
+      if err != nil {
+        log.Infof("Could not listen: %s",err)
+        return
+      }
+      defer in.Close()
+
+      for {
+        con, err := in.Accept()
+        if err != nil {
+          log.Errorf("Could not accept: %s",err)
+          continue}
+        defer con.Close()
+
+        log.Infof("Connecting to %s",cons)
+        out, err = net.Dial("tcp",cons)
+        if err != nil {
+          log.Errorf("Could not connect: %s",err)
+          continue}
+
+        cerr := make(chan error)
+
+        reader := []io.Reader{}
+        reader = append(reader,bufio.NewReader(con))
+        reader = append(reader,bufio.NewReader(out))
+
+        writer := []io.Writer{}
+        writer = append(writer,bufio.NewWriter(out))
+        writer = append(writer,bufio.NewWriter(con))
+
+        go func(){
+          for {
+            _, err := io.Copy(writer[0],reader[0])
+            if err != nil {
+              cerr <- err
+              break}
+            if done {break}
+          }
+        }()
+
+        go func(){
+          for {
+            _, err := io.Copy(writer[1],reader[1])
+            if err != nil {
+              cerr <- err
+              break}
+            if done {break}
+          }
+        }()
+
+        go func(){
+          for {
+            err := <-cerr
+            log.Infof("IO Error: %s",err)
+            if done {break}
+          }
+        }()
+      }
+    }
