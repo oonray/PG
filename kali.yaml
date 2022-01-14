@@ -29,14 +29,6 @@ spec:
                       - key: vpn.ovpn
                         path: vpn.ovpn
 
-                - name: vpn-key-creds
-                  secret:
-                    secretName: vpn-creds
-                    defaultMode: 0600
-                    items:
-                      - key: creds
-                        path: creds
-
                 - name: install-script
                   configMap:
                     name: kali-insall-script
@@ -117,6 +109,9 @@ spec:
                         secretKeyRef:
                           name: vpn-pass
                           key: PASSWORD
+                  command: ["/bin/sh"]
+                  tty: true
+                  stdin: true
 
                   volumeMounts:
                     - name: vpn-config

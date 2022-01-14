@@ -1,0 +1,33 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: c2
+    labels:
+      app: c2
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: c2
+    template:
+        metadata:
+            labels:
+                app: c2
+        spec:
+            dnsConfig:
+              nameservers:
+                - 8.8.8.8
+            volumes:
+            containers:
+                - name: c2
+                  image: oonray/c2
+                  securityContext:
+                    privileged: true
+                  command:
+                    - /bin/zsh
+                    - --rest
+                  tty: true
+                  stdin: true
+                  ports:
+                    - containerPort: 1337
