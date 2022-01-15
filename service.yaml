@@ -26,3 +26,6 @@ spec:
     - name: "1337"
       protocol: TCP
       port: 1337
+    - name: "5000"
+      protocol: TCP
+      port: 5000

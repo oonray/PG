@@ -14,9 +14,6 @@ spec:
             labels:
                 app: kali
         spec:
-            dnsConfig:
-              nameservers:
-                - 8.8.8.8
             volumes:
                 - name: tools
                   configMap:
@@ -67,11 +64,10 @@ spec:
 
                 - name: tmp
                   emptyDir: {}
+            dnsConfig:
+              nameservers:
+                - 8.8.8.8
 
-            hostAliases:
-              - ip: 10.10.10.21
-                hostnames:
-                  - joker.htb
             containers:
                 - name: kali
                   image: oonray/kali
@@ -97,18 +93,6 @@ spec:
                       value: off
                     - name: VPN_CONFIG_FILE
                       value: vpn.ovpn
-                    - name: SOCKS_PROXY
-                      value: on
-                    - name: PROXY_USERNAME
-                      valueFrom:
-                        secretKeyRef:
-                          name: vpn-pass
-                          key: USERNAME
-                    - name: PROXY_PASSWORD
-                      valueFrom:
-                        secretKeyRef:
-                          name: vpn-pass
-                          key: PASSWORD
                   command: ["/bin/sh"]
                   tty: true
                   stdin: true

@@ -7,4 +7,3 @@ resources:
   - secrets2.enc.yaml
   - service.yaml
   - kali.yaml
-  - empire.yaml

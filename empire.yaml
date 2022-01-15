@@ -26,10 +26,19 @@ spec:
                     privileged: true
                   command:
                     - /bin/sh
-                    - '-c'
-                    - powershell-empire
-                    - '--rest'
                   tty: true
                   stdin: true
+                  env:
+                    - name: USERNAME
+                      valueFrom:
+                        secretKeyRef:
+                          name: vpn-pass
+                          key: USERNAME
+                    - name: PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: vpn-pass
+                          key: PASSWORD
                   ports:
                     - containerPort: 1337
+                    - containerPort: 5000
